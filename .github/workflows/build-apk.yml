@@ -22,10 +22,18 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Restore debug keystore
+      - name: Accept Android SDK licenses
+        run: |
+          SDKM="$(command -v sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")"
+          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
+
+      - name: Prepare keystore and env
         run: |
           if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
             base64 -d debug.keystore.base64 > debug.keystore
+          fi
+          if [ ! -f .env ]; then
+            touch .env
           fi
 
       - name: Set up Gradle
@@ -34,7 +42,7 @@ jobs:
           gradle-version: '9.3.1'
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon
+        run: gradle :app:assembleDebug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
